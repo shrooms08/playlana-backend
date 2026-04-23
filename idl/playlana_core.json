@@ -1,0 +1,731 @@
+{
+  "address": "EQ2tfEf3XJbiCX7bsubCJUJLPBmkhWFiRXq7pjJQ59WV",
+  "metadata": {
+    "name": "playlana_core",
+    "version": "0.1.0",
+    "spec": "0.1.0",
+    "description": "Created with Anchor"
+  },
+  "instructions": [
+    {
+      "name": "create_player_profile",
+      "discriminator": [
+        74,
+        49,
+        165,
+        71,
+        60,
+        87,
+        254,
+        50
+      ],
+      "accounts": [
+        {
+          "name": "player_profile",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  114,
+                  111,
+                  102,
+                  105,
+                  108,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "player"
+              }
+            ]
+          }
+        },
+        {
+          "name": "config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "player",
+          "docs": [
+            "can create profiles on behalf of users (gasless)."
+          ]
+        },
+        {
+          "name": "payer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "initialize",
+      "discriminator": [
+        175,
+        175,
+        109,
+        31,
+        13,
+        152,
+        155,
+        237
+      ],
+      "accounts": [
+        {
+          "name": "config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "register_characters",
+      "discriminator": [
+        101,
+        49,
+        37,
+        190,
+        231,
+        188,
+        169,
+        175
+      ],
+      "accounts": [
+        {
+          "name": "character_registry",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  104,
+                  97,
+                  114,
+                  97,
+                  99,
+                  116,
+                  101,
+                  114,
+                  115
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "config"
+          ]
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "character_names",
+          "type": {
+            "vec": "string"
+          }
+        }
+      ]
+    },
+    {
+      "name": "submit_match_result",
+      "discriminator": [
+        19,
+        16,
+        110,
+        118,
+        110,
+        241,
+        132,
+        184
+      ],
+      "accounts": [
+        {
+          "name": "match_result",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  97,
+                  116,
+                  99,
+                  104
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "config.total_matches",
+                "account": "Config"
+              }
+            ]
+          }
+        },
+        {
+          "name": "config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "config"
+          ]
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "match_data",
+          "type": {
+            "defined": {
+              "name": "SubmitMatchData"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "update_player_stats",
+      "discriminator": [
+        61,
+        85,
+        73,
+        244,
+        51,
+        95,
+        21,
+        33
+      ],
+      "accounts": [
+        {
+          "name": "player_profile",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  114,
+                  111,
+                  102,
+                  105,
+                  108,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "player"
+              }
+            ]
+          }
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "player"
+        },
+        {
+          "name": "authority",
+          "signer": true,
+          "relations": [
+            "config"
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "crowns_earned",
+          "type": "u8"
+        },
+        {
+          "name": "won_match",
+          "type": "bool"
+        }
+      ]
+    },
+    {
+      "name": "update_preferred_character",
+      "discriminator": [
+        9,
+        252,
+        8,
+        41,
+        206,
+        160,
+        8,
+        137
+      ],
+      "accounts": [
+        {
+          "name": "player_profile",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  114,
+                  111,
+                  102,
+                  105,
+                  108,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "player"
+              }
+            ]
+          }
+        },
+        {
+          "name": "player"
+        },
+        {
+          "name": "authority",
+          "signer": true
+        }
+      ],
+      "args": [
+        {
+          "name": "character_index",
+          "type": "u8"
+        }
+      ]
+    }
+  ],
+  "accounts": [
+    {
+      "name": "CharacterRegistry",
+      "discriminator": [
+        136,
+        195,
+        148,
+        217,
+        62,
+        103,
+        41,
+        207
+      ]
+    },
+    {
+      "name": "Config",
+      "discriminator": [
+        155,
+        12,
+        170,
+        224,
+        30,
+        250,
+        204,
+        130
+      ]
+    },
+    {
+      "name": "MatchResult",
+      "discriminator": [
+        234,
+        166,
+        33,
+        250,
+        153,
+        92,
+        223,
+        196
+      ]
+    },
+    {
+      "name": "PlayerProfile",
+      "discriminator": [
+        82,
+        226,
+        99,
+        87,
+        164,
+        130,
+        181,
+        80
+      ]
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "TooManyCharacters",
+      "msg": "Too many characters in the registry"
+    },
+    {
+      "code": 6001,
+      "name": "CharacterNameTooLong",
+      "msg": "Character name exceeds maximum length"
+    },
+    {
+      "code": 6002,
+      "name": "InvalidCharacterIndex",
+      "msg": "Invalid character index"
+    },
+    {
+      "code": 6003,
+      "name": "NotEnoughPlayers",
+      "msg": "Not enough players in the match"
+    },
+    {
+      "code": 6004,
+      "name": "TooManyPlayers",
+      "msg": "Too many players in the match"
+    },
+    {
+      "code": 6005,
+      "name": "WinnerNotInMatch",
+      "msg": "Winner is not in the match player list"
+    },
+    {
+      "code": 6006,
+      "name": "Unauthorized",
+      "msg": "Unauthorized — only the program authority can call this"
+    }
+  ],
+  "types": [
+    {
+      "name": "Character",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "index",
+            "type": "u8"
+          },
+          {
+            "name": "name",
+            "type": {
+              "array": [
+                "u8",
+                16
+              ]
+            }
+          },
+          {
+            "name": "active",
+            "type": "bool"
+          }
+        ]
+      }
+    },
+    {
+      "name": "CharacterRegistry",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "character_count",
+            "type": "u8"
+          },
+          {
+            "name": "characters",
+            "type": {
+              "array": [
+                {
+                  "defined": {
+                    "name": "Character"
+                  }
+                },
+                20
+              ]
+            }
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Config",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "total_matches",
+            "type": "u64"
+          },
+          {
+            "name": "total_players",
+            "type": "u64"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "MatchPlayer",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "wallet",
+            "type": "pubkey"
+          },
+          {
+            "name": "character_index",
+            "type": "u8"
+          },
+          {
+            "name": "crown_wins",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "MatchResult",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "match_id",
+            "type": "u64"
+          },
+          {
+            "name": "winner",
+            "type": "pubkey"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          },
+          {
+            "name": "submitted_by",
+            "type": "pubkey"
+          },
+          {
+            "name": "player_count",
+            "type": "u8"
+          },
+          {
+            "name": "players",
+            "type": {
+              "array": [
+                {
+                  "defined": {
+                    "name": "MatchPlayer"
+                  }
+                },
+                4
+              ]
+            }
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "PlayerProfile",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "wallet",
+            "type": "pubkey"
+          },
+          {
+            "name": "total_crowns_earned",
+            "type": "u64"
+          },
+          {
+            "name": "total_matches_played",
+            "type": "u64"
+          },
+          {
+            "name": "total_matches_won",
+            "type": "u64"
+          },
+          {
+            "name": "preferred_character",
+            "type": "u8"
+          },
+          {
+            "name": "created_at",
+            "type": "i64"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "SubmitMatchData",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "winner",
+            "type": "pubkey"
+          },
+          {
+            "name": "players",
+            "type": {
+              "vec": {
+                "defined": {
+                  "name": "SubmitMatchPlayer"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "SubmitMatchPlayer",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "wallet",
+            "type": "pubkey"
+          },
+          {
+            "name": "character_index",
+            "type": "u8"
+          },
+          {
+            "name": "crown_wins",
+            "type": "u8"
+          }
+        ]
+      }
+    }
+  ]
+}
