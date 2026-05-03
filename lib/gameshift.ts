@@ -54,11 +54,14 @@ function pickAddress(body: unknown): string | undefined {
 }
 
 /**
- * Returns the new user (with wallet address), or null if GameShift reports
- * a 409 conflict (caller should then call getUserByReferenceId).
+ * Returns the new user (with a populated wallet address), or null on a
+ * 409 conflict (caller should then call getUserByReferenceId).
  *
- * The POST /nx/users response may or may not include the wallet `address`
- * directly. If it doesn't, we follow up with a GET to fetch it.
+ * The POST /nx/users response may NOT include the wallet `address` directly
+ * (observed in production: response is empty/lacks address even though the
+ * wallet exists and a subsequent GET returns it). When that happens, we
+ * always follow up with a GET. If even the GET fails to produce an address,
+ * we throw a 502 GameShiftError rather than ever returning an empty user.
  */
 export async function registerUser(email: string): Promise<GameShiftUser | null> {
   const res = await fetch(`${GAMESHIFT_BASE}/nx/users`, {
@@ -70,21 +73,38 @@ export async function registerUser(email: string): Promise<GameShiftUser | null>
     body: JSON.stringify({ referenceId: email, email }),
   });
 
-  console.log(`[gameshift] POST /nx/users -> ${res.status}`);
-
-  if (res.status === 200 || res.status === 201) {
-    const body = (await res.json()) as Record<string, unknown>;
-    const address = pickAddress(body);
-    if (address) {
-      return { address, referenceId: email, email };
-    }
-    // POST succeeded but didn't include the wallet — fetch it.
-    return await getUserByReferenceId(email);
-  }
   if (res.status === 409) {
+    console.log(`[gameshift] POST /nx/users -> 409 (already exists)`);
     return null;
   }
-  throw new GameShiftError(res.status, await readMessage(res));
+
+  if (res.status !== 200 && res.status !== 201) {
+    console.log(`[gameshift] POST /nx/users -> ${res.status} (error)`);
+    throw new GameShiftError(res.status, await readMessage(res));
+  }
+
+  // 200/201 — try to read address from the POST body.
+  let postAddress: string | undefined;
+  try {
+    const body = (await res.json()) as unknown;
+    postAddress = pickAddress(body);
+  } catch {
+    postAddress = undefined;
+  }
+  console.log(
+    `[gameshift] POST /nx/users responded ${res.status} — address present: ${!!postAddress}`
+  );
+
+  if (postAddress) {
+    return { address: postAddress, referenceId: email, email };
+  }
+
+  // Always fall back to GET — POST succeeded, but body lacked the wallet.
+  const fetched = await getUserByReferenceId(email);
+  if (!fetched.address) {
+    throw new GameShiftError(502, "wallet address not found after registration");
+  }
+  return fetched;
 }
 
 export async function getUserByReferenceId(referenceId: string): Promise<GameShiftUser> {
@@ -96,15 +116,24 @@ export async function getUserByReferenceId(referenceId: string): Promise<GameShi
     }
   );
 
-  console.log(`[gameshift] GET /users/<ref> -> ${res.status}`);
-
-  if (res.status === 200) {
-    const body = (await res.json()) as Record<string, unknown>;
-    const address = pickAddress(body);
-    if (!address) {
-      throw new GameShiftError(200, "wallet address not found in GameShift response");
-    }
-    return { address, referenceId, email: typeof body.email === "string" ? body.email : undefined };
+  if (res.status !== 200) {
+    console.log(`[gameshift] GET /users/<ref> -> ${res.status} (error)`);
+    throw new GameShiftError(res.status, await readMessage(res));
   }
-  throw new GameShiftError(res.status, await readMessage(res));
+
+  let address: string | undefined;
+  let bodyEmail: string | undefined;
+  try {
+    const body = (await res.json()) as Record<string, unknown>;
+    address = pickAddress(body);
+    if (typeof body.email === "string") bodyEmail = body.email;
+  } catch {
+    address = undefined;
+  }
+  console.log(`[gameshift] GET /users/<ref> -> 200 — address present: ${!!address}`);
+
+  if (!address) {
+    throw new GameShiftError(502, "wallet address not found in GameShift response");
+  }
+  return { address, referenceId, email: bodyEmail };
 }
