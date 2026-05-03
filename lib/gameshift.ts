@@ -1,4 +1,8 @@
-const GAMESHIFT_BASE = "https://api.gameshift.dev/nx";
+// GameShift exposes two namespaces:
+//   - POST /nx/users for registration (works fine, returns 201 / 409)
+//   - GET  /users/{referenceId} for read (the /nx/ variant omits the wallet)
+// The wallet field on the read endpoint is `address`, not `walletAddress`.
+const GAMESHIFT_BASE = "https://api.gameshift.dev";
 
 export class GameShiftError extends Error {
   constructor(public status: number, message: string) {
@@ -8,7 +12,7 @@ export class GameShiftError extends Error {
 }
 
 export interface GameShiftUser {
-  walletAddress: string;
+  address: string;
   referenceId?: string;
   email?: string;
 }
@@ -38,12 +42,26 @@ async function readMessage(res: Response): Promise<string> {
   }
 }
 
+function pickAddress(body: unknown): string | undefined {
+  if (!body || typeof body !== "object") return undefined;
+  const obj = body as Record<string, unknown>;
+  if (typeof obj.address === "string" && obj.address) return obj.address;
+  // Defensive: some legacy responses may still call it walletAddress.
+  if (typeof obj.walletAddress === "string" && obj.walletAddress) {
+    return obj.walletAddress;
+  }
+  return undefined;
+}
+
 /**
- * Returns the new user, or null if GameShift reports a 409 conflict
- * (caller should then call getUserByReferenceId).
+ * Returns the new user (with wallet address), or null if GameShift reports
+ * a 409 conflict (caller should then call getUserByReferenceId).
+ *
+ * The POST /nx/users response may or may not include the wallet `address`
+ * directly. If it doesn't, we follow up with a GET to fetch it.
  */
 export async function registerUser(email: string): Promise<GameShiftUser | null> {
-  const res = await fetch(`${GAMESHIFT_BASE}/users`, {
+  const res = await fetch(`${GAMESHIFT_BASE}/nx/users`, {
     method: "POST",
     headers: {
       "x-api-key": getApiKey(),
@@ -52,11 +70,16 @@ export async function registerUser(email: string): Promise<GameShiftUser | null>
     body: JSON.stringify({ referenceId: email, email }),
   });
 
-  console.log(`[gameshift] POST /users -> ${res.status}`);
+  console.log(`[gameshift] POST /nx/users -> ${res.status}`);
 
   if (res.status === 200 || res.status === 201) {
-    const data = (await res.json()) as GameShiftUser;
-    return data;
+    const body = (await res.json()) as Record<string, unknown>;
+    const address = pickAddress(body);
+    if (address) {
+      return { address, referenceId: email, email };
+    }
+    // POST succeeded but didn't include the wallet — fetch it.
+    return await getUserByReferenceId(email);
   }
   if (res.status === 409) {
     return null;
@@ -76,7 +99,12 @@ export async function getUserByReferenceId(referenceId: string): Promise<GameShi
   console.log(`[gameshift] GET /users/<ref> -> ${res.status}`);
 
   if (res.status === 200) {
-    return (await res.json()) as GameShiftUser;
+    const body = (await res.json()) as Record<string, unknown>;
+    const address = pickAddress(body);
+    if (!address) {
+      throw new GameShiftError(200, "wallet address not found in GameShift response");
+    }
+    return { address, referenceId, email: typeof body.email === "string" ? body.email : undefined };
   }
   throw new GameShiftError(res.status, await readMessage(res));
 }

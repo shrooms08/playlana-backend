@@ -24,11 +24,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     const created = await registerUser(email);
     if (created) {
-      return res.status(200).json({ wallet: created.walletAddress, isNewUser: true });
+      if (!created.address) {
+        return res.status(502).json({
+          error: "Wallet provisioning failed",
+          detail: "wallet address not found in GameShift response",
+        });
+      }
+      return res.status(200).json({ wallet: created.address, isNewUser: true });
     }
 
     const existing = await getUserByReferenceId(email);
-    return res.status(200).json({ wallet: existing.walletAddress, isNewUser: false });
+    if (!existing.address) {
+      return res.status(502).json({
+        error: "Wallet provisioning failed",
+        detail: "wallet address not found in GameShift response",
+      });
+    }
+    return res.status(200).json({ wallet: existing.address, isNewUser: false });
   } catch (err) {
     if (err instanceof GameShiftError) {
       console.error(`[register-wallet] gameshift ${err.status}: ${err.message}`);
