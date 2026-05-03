@@ -83,14 +83,46 @@ Returns the `PlayerProfile` for the wallet, or 404.
 
 Newest first (sorted by `matchId` desc). `limit` capped at 50.
 
+### `POST /api/register-wallet`
+
+Provisions a Solana wallet for a player via GameShift, keyed by email.
+Idempotent — calling twice with the same email returns the same wallet.
+
+Body:
+```json
+{ "email": "alice@example.com" }
+```
+
+Response:
+```json
+{ "wallet": "<base58>", "isNewUser": true }
+```
+
+`isNewUser` is `false` when the email was already registered. Returns 400 on
+invalid email, 502 on GameShift upstream failure (with `detail`).
+
+Requires `GAMESHIFT_API_KEY` env var.
+
+## CORS
+
+All endpoints allow these origins (browser-callable from the Unity WebGL
+build and the controller frontend):
+
+- `https://play-lana.vercel.app`
+- `http://localhost:3000`
+- `http://localhost:5173`
+
+`OPTIONS` preflight is handled in every endpoint.
+
 ## Deploy
 
 ```
 vercel deploy --prod
 ```
 
-Set the same three env vars in the Vercel project settings (Production +
-Preview). Function timeout is 30s (`vercel.json`).
+Set the env vars in the Vercel project settings (Production + Preview):
+`AUTHORITY_SECRET_KEY`, `HELIUS_RPC_URL`, `PROGRAM_ID`, `GAMESHIFT_API_KEY`.
+Function timeout is 30s (`vercel.json`).
 
 ## Security notes
 

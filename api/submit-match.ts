@@ -3,6 +3,7 @@ import { PublicKey, SystemProgram } from "@solana/web3.js";
 import { getProgram } from "../lib/anchor-client";
 import { getAuthorityKeypair } from "../lib/keypair";
 import { getConnection } from "../lib/helius";
+import { applyCors, handlePreflight } from "../lib/cors";
 import { configPda, matchPda, profilePda } from "../lib/pdas";
 
 interface SubmitPlayer {
@@ -33,8 +34,11 @@ function parsePubkey(value: string): PublicKey | null {
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  applyCors(req, res, ["POST"]);
+  if (handlePreflight(req, res)) return;
+
   if (req.method !== "POST") {
-    res.setHeader("Allow", "POST");
+    res.setHeader("Allow", "POST, OPTIONS");
     return res.status(405).json({ error: "method not allowed" });
   }
 
