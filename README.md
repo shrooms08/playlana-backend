@@ -103,6 +103,68 @@ invalid email, 502 on GameShift upstream failure (with `detail`).
 
 Requires `GAMESHIFT_API_KEY` env var.
 
+### `GET /api/leaderboard`
+
+Returns the SOAR top-N leaderboard for Crown Royale (highest crowns first).
+
+Response:
+```json
+{
+  "leaderboard": "<base58>",
+  "isAscending": false,
+  "entries": [
+    {
+      "rank": 1,
+      "soarPlayer": "<base58>",
+      "wallet": "<base58 PlayLana wallet>",
+      "score": "47",
+      "timestamp": "1714780000"
+    }
+  ]
+}
+```
+
+`wallet` is the original PlayLana (GameShift) wallet, mapped from the
+deterministic SOAR identity. It can be `null` if a SOAR entry exists for a
+player that no longer has a `PlayerProfile` on-chain.
+
+Requires `SOAR_GAME_PUBKEY`, `SOAR_LEADERBOARD_PUBKEY`, `SOAR_PLAYER_SEED`.
+
+## SOAR integration
+
+PlayLana writes match results to its own Anchor program AND to a SOAR
+leaderboard for cross-ecosystem visibility. See
+https://docs.magicblock.gg/Build/Open-source-programs/SOAR.
+
+**Gasless adaptation:** SOAR's `initializePlayer`/`registerPlayer` require
+the player wallet to sign. Players in PlayLana don't sign (custodial
+GameShift wallets), so we derive a deterministic per-player SOAR keypair
+on the backend from `sha256(SOAR_PLAYER_SEED || playerWallet.toBytes())`.
+The backend signs all SOAR ops as this derived key. The PlayLana wallet ↔
+SOAR identity mapping is recomputed in `/api/leaderboard` so consumers see
+the original PlayLana wallet.
+
+**One-time setup** (idempotent — safe to re-run):
+
+```
+npx tsx scripts/init-soar.ts
+```
+
+The script will:
+1. Print a fresh `SOAR_PLAYER_SEED` if it isn't already in `.env` — copy
+   it back into `.env` and into Vercel env vars **before** any traffic
+   hits `/api/submit-match` or `/api/leaderboard`. Changing this seed
+   later orphans every existing SOAR identity.
+2. Create the SOAR `Game` account (skip if `SOAR_GAME_PUBKEY` is already
+   set and on-chain).
+3. Create the leaderboard (skip if `SOAR_LEADERBOARD_PUBKEY` set).
+4. Print the resulting pubkeys for you to add to `.env`.
+
+**SOAR is non-blocking in `/api/submit-match`.** If SOAR submission throws,
+the response still returns 200 with the playlana_core signatures and a
+`soar: { submitted: false, error: "..." }` field. The match is already
+recorded on-chain via `playlana_core` — SOAR is supplementary.
+
 ## CORS
 
 All endpoints allow these origins (browser-callable from the Unity WebGL
@@ -121,8 +183,9 @@ vercel deploy --prod
 ```
 
 Set the env vars in the Vercel project settings (Production + Preview):
-`AUTHORITY_SECRET_KEY`, `HELIUS_RPC_URL`, `PROGRAM_ID`, `GAMESHIFT_API_KEY`.
-Function timeout is 30s (`vercel.json`).
+`AUTHORITY_SECRET_KEY`, `HELIUS_RPC_URL`, `PROGRAM_ID`, `GAMESHIFT_API_KEY`,
+`SOAR_GAME_PUBKEY`, `SOAR_LEADERBOARD_PUBKEY`, `SOAR_PLAYER_SEED`. Function
+timeout is 30s (`vercel.json`).
 
 ## Security notes
 

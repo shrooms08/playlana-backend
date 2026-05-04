@@ -5,6 +5,7 @@ import { getAuthorityKeypair } from "../lib/keypair";
 import { getConnection } from "../lib/helius";
 import { applyCors, handlePreflight } from "../lib/cors";
 import { configPda, matchPda, profilePda } from "../lib/pdas";
+import { submitPlayerScore } from "../lib/soar";
 
 interface SubmitPlayer {
   wallet: string;
@@ -154,6 +155,25 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       statsSignatures[p.wallet.toBase58()] = sig;
     }
 
+    // SOAR submission — supplementary, must not fail the request.
+    type SoarScore = { wallet: string; score: string; tx: string };
+    let soar: { submitted: true; scores: SoarScore[] } | { submitted: false; error: string };
+    try {
+      const scores: SoarScore[] = [];
+      for (const p of playersParsed) {
+        const profile = profilePda(p.wallet);
+        const fresh = await program.account.playerProfile.fetch(profile);
+        const totalCrowns = BigInt(fresh.totalCrownsEarned.toString());
+        const tx = await submitPlayerScore(p.wallet, totalCrowns);
+        scores.push({ wallet: p.wallet.toBase58(), score: totalCrowns.toString(), tx });
+      }
+      soar = { submitted: true, scores };
+    } catch (soarErr) {
+      const msg = soarErr instanceof Error ? soarErr.message : "unknown SOAR error";
+      console.error("[submit-match] SOAR submission failed:", msg);
+      soar = { submitted: false, error: msg };
+    }
+
     return res.status(200).json({
       matchId: matchId.toString(),
       matchAccount: matchAccount.toBase58(),
@@ -162,6 +182,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         submitMatch: submitSig,
         updateStats: statsSignatures,
       },
+      soar,
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : "unknown error";
