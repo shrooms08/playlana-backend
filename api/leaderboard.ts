@@ -38,7 +38,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       reverseMap.set(derived.toBase58(), playerWallet);
     }
 
-    const sorted = [...top.topScores].sort((a, b) => {
+    const PLACEHOLDER_PUBKEY = "11111111111111111111111111111111";
+    const MAX_ENTRIES = 50;
+
+    const live = top.topScores.filter((s) => {
+      if (s.player.toBase58() === PLACEHOLDER_PUBKEY) return false;
+      const score = s.entry.score.toString();
+      const timestamp = s.entry.timestamp.toString();
+      if (score === "0" && timestamp === "0") return false;
+      return true;
+    });
+
+    const sorted = live.sort((a, b) => {
       const av = BigInt(a.entry.score.toString());
       const bv = BigInt(b.entry.score.toString());
       if (av === bv) return 0;
@@ -51,7 +62,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           : 1;
     });
 
-    const entries = sorted.map((s, i) => {
+    const entries = sorted.slice(0, MAX_ENTRIES).map((s, i) => {
       const soarPubkey = s.player.toBase58();
       const wallet = reverseMap.get(soarPubkey);
       return {
