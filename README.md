@@ -136,6 +136,11 @@ PlayLana writes match results to its own Anchor program AND to a SOAR
 leaderboard for cross-ecosystem visibility. See
 https://docs.magicblock.gg/Build/Open-source-programs/SOAR.
 
+**Lifetime totals, not per-match scores:** the leaderboard ranks players by
+their lifetime crown total. Each player has at most one entry — submitting
+a lower score after a higher one is silently a no-op. This is SOAR's
+expected behavior with `allowMultipleScores: false`, not a bug.
+
 **Gasless adaptation:** SOAR's `initializePlayer`/`registerPlayer` require
 the player wallet to sign. Players in PlayLana don't sign (custodial
 GameShift wallets), so we derive a deterministic per-player SOAR keypair

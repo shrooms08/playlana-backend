@@ -34,8 +34,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const reverseMap = new Map<string, PublicKey>();
     for (const entry of profiles) {
       const playerWallet = entry.account.wallet as PublicKey;
-      const derived = derivePlayerSoarKeypair(playerWallet).publicKey;
-      reverseMap.set(derived.toBase58(), playerWallet);
+      const soarPubkey = derivePlayerSoarKeypair(playerWallet).publicKey;
+      const playerPda = soar.utils.derivePlayerAddress(soarPubkey)[0];
+      reverseMap.set(playerPda.toBase58(), playerWallet);
     }
 
     const PLACEHOLDER_PUBKEY = "11111111111111111111111111111111";
